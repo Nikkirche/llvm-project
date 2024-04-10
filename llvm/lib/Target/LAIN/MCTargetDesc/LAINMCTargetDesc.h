@@ -3,5 +3,6 @@
 
 #define GET_REGINFO_ENUM
 #include "LAINGenRegisterInfo.inc"
-
+#define GET_INSTRINFO_ENUM
+#include "LAINGenInstrInfo.inc"
 #endif

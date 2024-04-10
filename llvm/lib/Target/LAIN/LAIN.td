@@ -1,4 +1,8 @@
 include "llvm/Target/Target.td"
 include "LAINRegisterInfo.td"
+include "LAINInstrInfo.td"
 
-def LAIN : Target;
+def LAINInstrInfo : InstrInfo;
+def LAIN : Target {
+  let InstructionSet = LAINInstrInfo;
+}
