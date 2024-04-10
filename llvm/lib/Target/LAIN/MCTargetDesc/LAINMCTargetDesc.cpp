@@ -1,10 +1,13 @@
 #include "MCTargetDesc/LAINInfo.h"
 #include "LAIN.h"
+#include "LAINMCAsmInfo.h"
 #include "TargetInfo/LAINTargetInfo.h"
+#include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace llvm;
 
@@ -30,6 +33,18 @@ static MCSubtargetInfo *createLAINMCSubtargetInfo(const Triple &TT,
   return createLAINMCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/ CPU, FS);
 }
 
+
+static MCAsmInfo *createLAINMCAsmInfo(const MCRegisterInfo &MRI,
+                                     const Triple &TT,
+                                     const MCTargetOptions &Options) {
+  LAIN_DUMP_MAGENTA
+  MCAsmInfo *MAI = new LAINELFMCAsmInfo(TT);
+  unsigned SP = MRI.getDwarfRegNum(LAIN::R1, true);
+  MCCFIInstruction Inst = MCCFIInstruction::cfiDefCfa(nullptr, SP, 0);
+  MAI->addInitialFrameState(Inst);
+  return MAI;
+}
+
 static MCInstrInfo *createLAINMCInstrInfo() {
   LAIN_DUMP_MAGENTA
   MCInstrInfo *X = new MCInstrInfo();
@@ -41,6 +56,7 @@ static MCInstrInfo *createLAINMCInstrInfo() {
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeLAINTargetMC() {
   LAIN_DUMP_MAGENTA
   Target &TheLAINTarget = getTheLAINTarget();
+  RegisterMCAsmInfoFn X(TheLAINTarget, createLAINMCAsmInfo);
   // Register the MC register info.
   TargetRegistry::RegisterMCRegInfo(TheLAINTarget, createLAINMCRegisterInfo);
   // Register the MC instruction info.
