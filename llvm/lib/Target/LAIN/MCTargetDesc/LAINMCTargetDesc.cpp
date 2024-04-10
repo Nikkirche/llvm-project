@@ -3,6 +3,7 @@
 #include "TargetInfo/LAINTargetInfo.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/TargetRegistry.h"
 
 using namespace llvm;
@@ -13,11 +14,20 @@ using namespace llvm;
 #define GET_INSTRINFO_MC_DESC
 #include "LAINGenInstrInfo.inc"
 
+#define GET_SUBTARGETINFO_MC_DESC
+#include "LAINGenSubtargetInfo.inc"
+
 static MCRegisterInfo *createLAINMCRegisterInfo(const Triple &TT) {
   LAIN_DUMP_MAGENTA
   MCRegisterInfo *X = new MCRegisterInfo();
   InitLAINMCRegisterInfo(X, LAIN::R0);
   return X;
+}
+
+static MCSubtargetInfo *createLAINMCSubtargetInfo(const Triple &TT,
+                                                 StringRef CPU, StringRef FS) {
+  LAIN_DUMP_MAGENTA
+  return createLAINMCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/ CPU, FS);
 }
 
 static MCInstrInfo *createLAINMCInstrInfo() {
@@ -35,4 +45,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeLAINTargetMC() {
   TargetRegistry::RegisterMCRegInfo(TheLAINTarget, createLAINMCRegisterInfo);
   // Register the MC instruction info.
   TargetRegistry::RegisterMCInstrInfo(TheLAINTarget, createLAINMCInstrInfo);
+  // Register the MC subtarget info.
+  TargetRegistry::RegisterMCSubtargetInfo(TheLAINTarget,
+                                          createLAINMCSubtargetInfo);
 }
