@@ -10,6 +10,8 @@ tablegen(LLVM LAINGenCallingConv.inc -gen-callingconv)
 tablegen(LLVM LAINGenMCPseudoLowering.inc -gen-pseudo-lowering)
 tablegen(LLVM LAINGenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM LAINGenDAGISel.inc -gen-dag-isel)
+tablegen(LLVM LAINGenMCCodeEmitter.inc -gen-emitter)
+
 add_public_tablegen_target(LAINCommonTableGen)
 
 add_llvm_target(LAINCodeGen

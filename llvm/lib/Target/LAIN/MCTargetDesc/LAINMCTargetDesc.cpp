@@ -3,8 +3,9 @@
 #include "LAINInfo.h"
 #include "LAINInstPrinter.h"
 #include "LAINMCAsmInfo.h"
-#include "TargetInfo/LAINTargetInfo.h"
 #include "LAINTargetStreamer.h"
+#include "TargetInfo/LAINTargetInfo.h"
+#include "TargetInfo/LAINTargetInfo.h"
 #include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
@@ -89,4 +90,8 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeLAINTargetMC() {
   TargetRegistry::RegisterMCInstPrinter(TheLAINTarget, createLAINMCInstPrinter);
   TargetRegistry::RegisterAsmTargetStreamer(TheLAINTarget,
                                             createTargetAsmStreamer);
+  // Register the MC Code Emitter.
+  TargetRegistry::RegisterMCCodeEmitter(TheLAINTarget, createLAINMCCodeEmitter);
+  // Register the asm backend.
+  TargetRegistry::RegisterMCAsmBackend(TheLAINTarget, createLAINAsmBackend);
 }
