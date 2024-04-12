@@ -1,13 +1,17 @@
-#include "MCTargetDesc/LAINInfo.h"
+#include "LAINMCTargetDesc.h"
 #include "LAIN.h"
+#include "LAINInfo.h"
+#include "LAINInstPrinter.h"
 #include "LAINMCAsmInfo.h"
 #include "TargetInfo/LAINTargetInfo.h"
+#include "LAINTargetStreamer.h"
 #include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/FormattedStream.h"
 
 using namespace llvm;
 
@@ -45,6 +49,24 @@ static MCAsmInfo *createLAINMCAsmInfo(const MCRegisterInfo &MRI,
   return MAI;
 }
 
+static MCInstPrinter *createLAINMCInstPrinter(const Triple &T,
+                                             unsigned SyntaxVariant,
+                                             const MCAsmInfo &MAI,
+                                             const MCInstrInfo &MII,
+                                             const MCRegisterInfo &MRI) {
+  return new LAINInstPrinter(MAI, MII, MRI);
+}
+
+LAINTargetStreamer::LAINTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
+LAINTargetStreamer::~LAINTargetStreamer() = default;
+
+static MCTargetStreamer *createTargetAsmStreamer(MCStreamer &S,
+                                                 formatted_raw_ostream &OS,
+                                                 MCInstPrinter *InstPrint,
+                                                 bool isVerboseAsm) {
+  return new LAINTargetStreamer(S);
+}
+
 static MCInstrInfo *createLAINMCInstrInfo() {
   LAIN_DUMP_MAGENTA
   MCInstrInfo *X = new MCInstrInfo();
@@ -64,4 +86,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeLAINTargetMC() {
   // Register the MC subtarget info.
   TargetRegistry::RegisterMCSubtargetInfo(TheLAINTarget,
                                           createLAINMCSubtargetInfo);
+  TargetRegistry::RegisterMCInstPrinter(TheLAINTarget, createLAINMCInstPrinter);
+  TargetRegistry::RegisterAsmTargetStreamer(TheLAINTarget,
+                                            createTargetAsmStreamer);
 }

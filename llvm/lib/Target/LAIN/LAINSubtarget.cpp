@@ -1,8 +1,8 @@
 
 #include "LAINSubtarget.h"
 #include "LAIN.h"
-#include "llvm/Target/TargetMachine.h"
-
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/ErrorHandling.h"
 using namespace llvm;
 
 #define DEBUG_TYPE "lain-subtarget"
@@ -11,8 +11,9 @@ using namespace llvm;
 #define GET_SUBTARGETINFO_CTOR
 #include "LAINGenSubtargetInfo.inc"
 
-LAINSubtarget::LAINSubtarget(const StringRef &CPU, const StringRef &TuneCPU,
-                           const StringRef &FS, const TargetMachine &TM)
-    : LAINGenSubtargetInfo(TM.getTargetTriple(), CPU, TuneCPU, FS) {
-  LAIN_DUMP_CYAN
-}
+void LAINSubtarget::anchor() {}
+
+LAINSubtarget::LAINSubtarget(const Triple &TT, const std::string &CPU,
+                           const std::string &FS, const TargetMachine &TM)
+    : LAINGenSubtargetInfo(TT, CPU, /*TuneCPU=*/CPU, FS), InstrInfo(),
+      FrameLowering(*this), TLInfo(TM, *this) {}

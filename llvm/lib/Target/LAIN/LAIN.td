@@ -1,6 +1,7 @@
 include "llvm/Target/Target.td"
 include "LAINRegisterInfo.td"
 include "LAINInstrInfo.td"
+include "LAINCallingConvention.td"
 
 class Proc<string Name, list<SubtargetFeature> Features>
  : Processor<Name, NoItineraries, Features>;

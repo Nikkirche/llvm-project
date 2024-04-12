@@ -5,7 +5,11 @@ set(LLVM_TARGET_DEFINITIONS LAIN.td)
 tablegen(LLVM LAINGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM LAINGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM LAINGenSubtargetInfo.inc -gen-subtarget)
-
+tablegen(LLVM LAINGenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM LAINGenCallingConv.inc -gen-callingconv)
+tablegen(LLVM LAINGenMCPseudoLowering.inc -gen-pseudo-lowering)
+tablegen(LLVM LAINGenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM LAINGenDAGISel.inc -gen-dag-isel)
 add_public_tablegen_target(LAINCommonTableGen)
 
 add_llvm_target(LAINCodeGen
@@ -13,6 +17,11 @@ add_llvm_target(LAINCodeGen
         LAINRegisterInfo.cpp
         LAINInstrInfo.cpp
         LAINSubtarget.cpp
+        LAINAsmPrinter.cpp
+        LAINFrameLowering.cpp
+        LAINISelDagToDag.cpp
+        LAINISelLowering.cpp
+        LAINMCInstLower.cpp
 
         LINK_COMPONENTS
         CodeGen
@@ -20,6 +29,10 @@ add_llvm_target(LAINCodeGen
         Support
         Target
         LAINInfo
+        MC
+        LAINDesc
+        AsmPrinter
+        SelectionDAG
 
         ADD_TO_COMPONENT
         LAIN

@@ -18,4 +18,24 @@
 #define LAIN_DUMP_MAGENTA LAIN_DUMP(llvm::raw_ostream::MAGENTA)
 #define LAIN_DUMP_WHITE LAIN_DUMP(llvm::raw_ostream::WHITE)
 
-#endif // LLVM_LIB_TARGET_Sim_Sim_H
+namespace llvm {
+class LAINTargetMachine;
+class FunctionPass;
+class LAINSubtarget;
+class AsmPrinter;
+class InstructionSelector;
+class MCInst;
+class MCOperand;
+class MachineInstr;
+class MachineOperand;
+class PassRegistry;
+
+bool lowerLAINMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
+                                  AsmPrinter &AP);
+bool LowerLAINMachineOperandToMCOperand(const MachineOperand &MO,
+                                       MCOperand &MCOp, const AsmPrinter &AP);
+
+FunctionPass *createLAINISelDag(LAINTargetMachine &TM);
+
+}
+#endif // LLVM_LIB_TARGET_LAIN_LAIN_H
