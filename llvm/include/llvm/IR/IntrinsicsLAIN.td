@@ -1,6 +1,6 @@
 let TargetPrefix = "lain" in {  // All intrinsics start with "llvm.lain.".
 
-def int_lain_putpixel: ClangBuiltin<"simPutPixel">,
+def int_lain_setpixel: ClangBuiltin<"simSetPixel">,
   Intrinsic<[], [llvm_i32_ty, llvm_i32_ty, llvm_i32_ty], [IntrNoMem, IntrHasSideEffects]>;
 
 def int_lain_flush: ClangBuiltin<"simFlush">,

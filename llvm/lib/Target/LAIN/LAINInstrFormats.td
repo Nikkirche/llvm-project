@@ -49,8 +49,8 @@ class LAINPseudoInst<dag outs, dag ins, string asmstr, list<dag> pattern>
 
 //intrinsics
 
-def PUTPIXEL : LAINInst<0xF0, (outs), (ins GPR:$r1, GPR:$r2, GPR:$r3_imm),
-                      "PUTPIXEL $r1 $r2 $r3_imm", [(int_lain_putpixel GPR:$r1, GPR:$r2, GPR:$r3_imm)]>;
+def SETPIXEL : LAINInst<0xF0, (outs), (ins GPR:$r1, GPR:$r2, GPR:$r3_imm),
+                      "SETPIXEL $r1 $r2 $r3_imm", [(int_lain_setpixel GPR:$r1, GPR:$r2, GPR:$r3_imm)]>;
 
 let r1 = 0, r2 = 0, r3_imm = 0 in
 def FLUSH : LAINInst<0xF1, (outs), (ins), "FLUSH", [(int_lain_flush)]>;
