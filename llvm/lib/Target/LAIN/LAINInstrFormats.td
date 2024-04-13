@@ -46,3 +46,20 @@ class LAINPseudoInst<dag outs, dag ins, string asmstr, list<dag> pattern>
   let isPseudo = 1;
   let isCodeGenOnly = 1;
 }
+
+//intrinsics
+
+def PUTPIXEL : LAINInst<0xF0, (outs), (ins GPR:$r1, GPR:$r2, GPR:$r3_imm),
+                      "PUTPIXEL $r1 $r2 $r3_imm", [(int_lain_putpixel GPR:$r1, GPR:$r2, GPR:$r3_imm)]>;
+
+let r1 = 0, r2 = 0, r3_imm = 0 in
+def FLUSH : LAINInst<0xF1, (outs), (ins), "FLUSH", [(int_lain_flush)]>;
+
+let r2 = 0, r3_imm = 0 in
+def RAND : LAINInst<0xF2, (outs GPR:$r1), (ins), "RAND $r1", [(set GPR:$r1, (int_lain_rand))]>;
+
+let r3_imm = 0 in
+def ABS : LAINInst<0xF3, (outs GPR:$r1), (ins GPR:$r2), "ABS $r1 $r2", [(set GPR:$r1, (int_lain_abs GPR:$r2))]>;
+
+let r1 = 0, r2 = 0, r3_imm = 0 in
+def INIT  : LAINInst<0xF4, (outs), (ins), "INIT", [(int_lain_init)]>;

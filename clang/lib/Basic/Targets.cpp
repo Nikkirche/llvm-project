@@ -22,6 +22,7 @@
 #include "Targets/CSKY.h"
 #include "Targets/DirectX.h"
 #include "Targets/Hexagon.h"
+#include "Targets/LAIN.h"
 #include "Targets/Lanai.h"
 #include "Targets/Le64.h"
 #include "Targets/LoongArch.h"
@@ -452,8 +453,7 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
       return std::make_unique<FuchsiaTargetInfo<RISCV64TargetInfo>>(Triple,
                                                                     Opts);
     case llvm::Triple::Haiku:
-      return std::make_unique<HaikuTargetInfo<RISCV64TargetInfo>>(Triple,
-                                                                  Opts);
+      return std::make_unique<HaikuTargetInfo<RISCV64TargetInfo>>(Triple, Opts);
     case llvm::Triple::Linux:
       switch (Triple.getEnvironment()) {
       default:
@@ -683,17 +683,17 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
         !Triple.isOSBinFormatWasm())
       return nullptr;
     switch (os) {
-      case llvm::Triple::WASI:
+    case llvm::Triple::WASI:
       return std::make_unique<WASITargetInfo<WebAssembly32TargetInfo>>(Triple,
                                                                        Opts);
-      case llvm::Triple::Emscripten:
+    case llvm::Triple::Emscripten:
       return std::make_unique<EmscriptenTargetInfo<WebAssembly32TargetInfo>>(
           Triple, Opts);
-      case llvm::Triple::UnknownOS:
+    case llvm::Triple::UnknownOS:
       return std::make_unique<WebAssemblyOSTargetInfo<WebAssembly32TargetInfo>>(
           Triple, Opts);
-      default:
-        return nullptr;
+    default:
+      return nullptr;
     }
   case llvm::Triple::wasm64:
     if (Triple.getSubArch() != llvm::Triple::NoSubArch ||
@@ -701,17 +701,17 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
         !Triple.isOSBinFormatWasm())
       return nullptr;
     switch (os) {
-      case llvm::Triple::WASI:
+    case llvm::Triple::WASI:
       return std::make_unique<WASITargetInfo<WebAssembly64TargetInfo>>(Triple,
                                                                        Opts);
-      case llvm::Triple::Emscripten:
+    case llvm::Triple::Emscripten:
       return std::make_unique<EmscriptenTargetInfo<WebAssembly64TargetInfo>>(
           Triple, Opts);
-      case llvm::Triple::UnknownOS:
+    case llvm::Triple::UnknownOS:
       return std::make_unique<WebAssemblyOSTargetInfo<WebAssembly64TargetInfo>>(
           Triple, Opts);
-      default:
-        return nullptr;
+    default:
+      return nullptr;
     }
 
   case llvm::Triple::dxil:
@@ -729,26 +729,28 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
   case llvm::Triple::csky:
     switch (os) {
     case llvm::Triple::Linux:
-        return std::make_unique<LinuxTargetInfo<CSKYTargetInfo>>(Triple, Opts);
+      return std::make_unique<LinuxTargetInfo<CSKYTargetInfo>>(Triple, Opts);
     default:
-        return std::make_unique<CSKYTargetInfo>(Triple, Opts);
+      return std::make_unique<CSKYTargetInfo>(Triple, Opts);
     }
   case llvm::Triple::loongarch32:
     switch (os) {
     case llvm::Triple::Linux:
-        return std::make_unique<LinuxTargetInfo<LoongArch32TargetInfo>>(Triple,
-                                                                        Opts);
+      return std::make_unique<LinuxTargetInfo<LoongArch32TargetInfo>>(Triple,
+                                                                      Opts);
     default:
-        return std::make_unique<LoongArch32TargetInfo>(Triple, Opts);
+      return std::make_unique<LoongArch32TargetInfo>(Triple, Opts);
     }
   case llvm::Triple::loongarch64:
     switch (os) {
     case llvm::Triple::Linux:
-        return std::make_unique<LinuxTargetInfo<LoongArch64TargetInfo>>(Triple,
-                                                                        Opts);
+      return std::make_unique<LinuxTargetInfo<LoongArch64TargetInfo>>(Triple,
+                                                                      Opts);
     default:
-        return std::make_unique<LoongArch64TargetInfo>(Triple, Opts);
+      return std::make_unique<LoongArch64TargetInfo>(Triple, Opts);
     }
+  case llvm::Triple::lain:
+    return std::make_unique<LAINTargetInfo>(Triple, Opts);
   }
 }
 } // namespace targets
