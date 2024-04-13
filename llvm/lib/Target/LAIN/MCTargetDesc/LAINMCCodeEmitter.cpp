@@ -31,6 +31,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/TargetParser/SubtargetFeature.h"
+#include "MCTargetDesc/LAINFixupKinds.h"
 #include <cassert>
 #include <cstdint>
 
@@ -46,8 +47,7 @@ class LAINMCCodeEmitter : public MCCodeEmitter {
   MCContext &Ctx;
 
 public:
-  LAINMCCodeEmitter(const MCInstrInfo &, MCContext &ctx)
-      : Ctx(ctx) {}
+  LAINMCCodeEmitter(const MCInstrInfo &, MCContext &ctx) : Ctx(ctx) {}
   LAINMCCodeEmitter(const LAINMCCodeEmitter &) = delete;
   LAINMCCodeEmitter &operator=(const LAINMCCodeEmitter &) = delete;
   ~LAINMCCodeEmitter() override = default;
@@ -67,27 +67,30 @@ public:
   unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
                              SmallVectorImpl<MCFixup> &Fixups,
                              const MCSubtargetInfo &STI) const;
-  unsigned getLImm16OpValue(const MCInst &MI, unsigned OpNo,
-                            SmallVectorImpl<MCFixup> &Fixups,
-                            const MCSubtargetInfo &STI) const;
+  unsigned getImm16OpValue(const MCInst &MI, unsigned OpNo,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo &STI) const;
+  unsigned getBranchTarget16OpValue(const MCInst &MI, unsigned OpNo,
+                                    SmallVectorImpl<MCFixup> &Fixups,
+                                    const MCSubtargetInfo &STI) const;
 };
 
 } // end anonymous namespace
 
 void LAINMCCodeEmitter::encodeInstruction(const MCInst &MI,
-                                         SmallVectorImpl<char> &CB,
-                                         SmallVectorImpl<MCFixup> &Fixups,
-                                         const MCSubtargetInfo &STI) const {
+                                          SmallVectorImpl<char> &CB,
+                                          SmallVectorImpl<MCFixup> &Fixups,
+                                          const MCSubtargetInfo &STI) const {
   unsigned Bits = getBinaryCodeForInstr(MI, Fixups, STI);
   support::endian::write(CB, Bits, llvm::endianness::little);
 
-  ++MCNumEmitted;  // Keep track of the # of mi's emitted.
+  ++MCNumEmitted; // Keep track of the # of mi's emitted.
 }
 
-unsigned LAINMCCodeEmitter::
-    getMachineOpValue(const MCInst &MI, const MCOperand &MO,
-                      SmallVectorImpl<MCFixup> &Fixups,
-                      const MCSubtargetInfo &STI) const {
+unsigned
+LAINMCCodeEmitter::getMachineOpValue(const MCInst &MI, const MCOperand &MO,
+                                     SmallVectorImpl<MCFixup> &Fixups,
+                                     const MCSubtargetInfo &STI) const {
   if (MO.isReg())
     return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
 
@@ -105,16 +108,15 @@ unsigned LAINMCCodeEmitter::
   return 0;
 }
 
-unsigned
-LAINMCCodeEmitter::getLImm16OpValue(const MCInst &MI, unsigned OpNo,
-                                   SmallVectorImpl<MCFixup> &Fixups,
-                                   const MCSubtargetInfo &STI) const {
+unsigned LAINMCCodeEmitter::getImm16OpValue(const MCInst &MI, unsigned OpNo,
+                                            SmallVectorImpl<MCFixup> &Fixups,
+                                            const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(OpNo);
   if (MO.isImm())
     return MO.getImm();
 
   assert(MO.isExpr() &&
-         "getLImm16OpValue expects only expressions or an immediate");
+         "getImm16OpValue expects only expressions or an immediate");
 
   const MCExpr *Expr = MO.getExpr();
 
@@ -125,9 +127,30 @@ LAINMCCodeEmitter::getLImm16OpValue(const MCInst &MI, unsigned OpNo,
   return 0;
 }
 
+/// getBranchTarget21OpValue - Return binary encoding of the branch
+/// target operand. If the machine operand requires relocation,
+/// record the relocation and return zero.
+unsigned
+LAINMCCodeEmitter::getBranchTarget16OpValue(const MCInst &MI, unsigned OpNo,
+                                            SmallVectorImpl<MCFixup> &Fixups,
+                                            const MCSubtargetInfo &STI) const {
+  const MCOperand &MO = MI.getOperand(OpNo);
+
+  // If the destination is an immediate, divide by 4.
+  if (MO.isImm())
+    return MO.getImm() / 4;
+
+  assert(MO.isExpr() &&
+         "getBranchTarget16OpValue expects only expressions or immediates");
+
+  Fixups.push_back(
+      MCFixup::create(0, MO.getExpr(), MCFixupKind(LAIN::fixup_LAIN_PC16)));
+  return 0;
+}
+
 #include "LAINGenMCCodeEmitter.inc"
 
 MCCodeEmitter *llvm::createLAINMCCodeEmitter(const MCInstrInfo &MCII,
-                                            MCContext &Ctx) {
+                                             MCContext &Ctx) {
   return new LAINMCCodeEmitter(MCII, Ctx);
 }

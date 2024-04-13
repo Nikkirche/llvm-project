@@ -31,11 +31,21 @@ class MachineOperand;
 class PassRegistry;
 
 bool lowerLAINMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
-                                  AsmPrinter &AP);
+                                   AsmPrinter &AP);
 bool LowerLAINMachineOperandToMCOperand(const MachineOperand &MO,
-                                       MCOperand &MCOp, const AsmPrinter &AP);
+                                        MCOperand &MCOp, const AsmPrinter &AP);
 
 FunctionPass *createLAINISelDag(LAINTargetMachine &TM);
 
-}
+// todo replace and clean
+namespace LAIN {
+enum {
+  RA = LAIN::R0,
+  SP = LAIN::R1,
+  FP = LAIN::R2,
+  BP = LAIN::R3,
+  GP = LAIN::R4,
+};
+} // namespace LAIN
+} // namespace llvm
 #endif // LLVM_LIB_TARGET_LAIN_LAIN_H

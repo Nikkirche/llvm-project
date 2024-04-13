@@ -38,6 +38,8 @@ public:
 
   void emitInstruction(const MachineInstr *MI) override;
 
+  bool runOnMachineFunction(MachineFunction &MF) override;
+
   // Used in pseudo lowerings
   bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp) const {
     return LowerLAINMachineOperandToMCOperand(MO, MCOp, *this);
@@ -46,7 +48,7 @@ public:
 
 } // end anonymous namespace
 
-// Simple pseudo-instructions have their lowering (with expansion to real
+// LAINple pseudo-instructions have their lowering (with expansion to real
 // instructions) auto-generated.
 #include "LAINGenMCPseudoLowering.inc"
 
@@ -58,6 +60,19 @@ void LAINAsmPrinter::emitInstruction(const MachineInstr *MI) {
   MCInst TmpInst;
   if (!lowerLAINMachineInstrToMCInst(MI, TmpInst, *this))
     EmitToStreamer(*OutStreamer, TmpInst);
+}
+
+bool LAINAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
+  // Set the current MCSubtargetInfo to a copy which has the correct
+  // feature bits for the current MachineFunction
+  MCSubtargetInfo &NewSTI =
+      OutStreamer->getContext().getSubtargetCopy(*TM.getMCSubtargetInfo());
+  NewSTI.setFeatureBits(MF.getSubtarget().getFeatureBits());
+  STI = &NewSTI;
+
+  SetupMachineFunction(MF);
+  emitFunctionBody();
+  return false;
 }
 
 // Force static initialization.

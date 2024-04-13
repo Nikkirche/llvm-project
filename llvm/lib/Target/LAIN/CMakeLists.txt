@@ -26,6 +26,7 @@ add_llvm_target(LAINCodeGen
         LAINMCInstLower.cpp
 
         LINK_COMPONENTS
+        Analysis
         CodeGen
         Core
         Support
@@ -35,6 +36,7 @@ add_llvm_target(LAINCodeGen
         LAINDesc
         AsmPrinter
         SelectionDAG
+        GlobalISel
 
         ADD_TO_COMPONENT
         LAIN

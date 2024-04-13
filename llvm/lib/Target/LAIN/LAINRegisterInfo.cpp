@@ -23,13 +23,7 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "LAINGenRegisterInfo.inc"
 
-LAINRegisterInfo::LAINRegisterInfo() : LAINGenRegisterInfo(LAIN::R0) {}
-
-#if 0
-bool LAINRegisterInfo::needsFrameMoves(const MachineFunction &MF) {
-  return MF.needsFrameMoves();
-}
-#endif
+LAINRegisterInfo::LAINRegisterInfo() : LAINGenRegisterInfo(LAIN::RA) {}
 
 const MCPhysReg *
 LAINRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
@@ -41,10 +35,14 @@ BitVector LAINRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   LAINFrameLowering const *TFI = getFrameLowering(MF);
 
   BitVector Reserved(getNumRegs());
-  Reserved.set(LAIN::R1);
+  Reserved.set(LAIN::GP);
+  Reserved.set(LAIN::SP);
 
   if (TFI->hasFP(MF)) {
-    Reserved.set(LAIN::R2);
+    Reserved.set(LAIN::FP);
+  }
+  if (TFI->hasBP(MF)) {
+    Reserved.set(LAIN::BP);
   }
   return Reserved;
 }
@@ -53,13 +51,6 @@ bool LAINRegisterInfo::requiresRegisterScavenging(
     const MachineFunction &MF) const {
   return false; // TODO: what for?
 }
-
-#if 0
-bool LAINRegisterInfo::useFPForScavengingIndex(
-    const MachineFunction &MF) const {
-  llvm_unreachable("");
-}
-#endif
 
 // TODO: rewrite!
 bool LAINRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
@@ -89,7 +80,7 @@ bool LAINRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
 Register LAINRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = getFrameLowering(MF);
-  return TFI->hasFP(MF) ? LAIN::R2 : LAIN::R1;
+  return TFI->hasFP(MF) ? LAIN::FP : LAIN::SP;;
 }
 
 const uint32_t *

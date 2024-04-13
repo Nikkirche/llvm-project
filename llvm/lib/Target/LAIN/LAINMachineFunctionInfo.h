@@ -15,7 +15,6 @@ namespace llvm {
 /// LAINFunctionInfo - This class is derived from MachineFunction private
 /// LAIN target-specific information for each MachineFunction.
 class LAINFunctionInfo : public MachineFunctionInfo {
-  virtual void anchor();
 
   bool ReturnStackOffsetSet = false;
   unsigned ReturnStackOffset = -1U;

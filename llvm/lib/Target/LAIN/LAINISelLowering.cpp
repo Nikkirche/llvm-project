@@ -46,23 +46,27 @@ LAINTargetLowering::LAINTargetLowering(const TargetMachine &TM,
 
   // setSchedulingPreference(Sched::Source);
 
-  for (unsigned Opc = 0; Opc < ISD::BUILTIN_OP_END; ++Opc)
+  for (unsigned Opc = 0; Opc < ISD::BUILTIN_OP_END; ++Opc) {
     setOperationAction(Opc, MVT::i32, Expand);
 
-  setOperationAction(ISD::ADD, MVT::i32, Legal);
-  setOperationAction(ISD::MUL, MVT::i32, Legal);
-  // ...
-  setOperationAction(ISD::LOAD, MVT::i32, Legal);
-  setOperationAction(ISD::STORE, MVT::i32, Legal);
+    setOperationAction(ISD::ADD, MVT::i32, Legal);
+    setOperationAction(ISD::MUL, MVT::i32, Legal);
+    // ...
+    setOperationAction(ISD::LOAD, MVT::i32, Legal);
+    setOperationAction(ISD::STORE, MVT::i32, Legal);
 
-  setOperationAction(ISD::Constant, MVT::i32, Legal);
-  setOperationAction(ISD::UNDEF, MVT::i32, Legal);
+    setOperationAction(ISD::Constant, MVT::i32, Legal);
+    setOperationAction(ISD::UNDEF, MVT::i32, Legal);
 
-  setOperationAction(ISD::BR_CC, MVT::i32, Custom);
-
-  setOperationAction(ISD::FRAMEADDR, MVT::i32, Legal);
-  // setOperationAction(ISD::FrameIndex, MVT::i32, Custom);
-  // setOperationAction(ISD::GlobalAddress, MVT::i32, Custom);
+     setOperationAction(ISD::BR_CC, MVT::i32, Custom);
+    // setOperationAction(ISD::SELECT, MVT::i32, Expand);
+//    setOperationAction(ISD::SELECT, MVT::i32, Custom);
+//    for (MVT VT : MVT::integer_valuetypes()) {
+//      setOperationAction(ISD::BR_CC, VT, Expand);
+//      setOperationAction(ISD::SELECT_CC, VT, Expand);
+//    }
+    setOperationAction(ISD::FRAMEADDR, MVT::i32, Legal);
+  }
 }
 
 const char *LAINTargetLowering::getTargetNodeName(unsigned Opcode) const {
@@ -609,4 +613,73 @@ bool LAINTargetLowering::isLegalAddressingMode(const DataLayout &DL,
   }
 
   return true;
+}
+
+// Don't emit tail calls for the time being.
+bool LAINTargetLowering::mayBeEmittedAsTailCall(const CallInst *CI) const {
+  return false;
+}
+
+static void translateSetCCForBranch(const SDLoc &DL, SDValue &LHS, SDValue &RHS,
+                                    ISD::CondCode &CC, SelectionDAG &DAG) {
+  switch (CC) {
+  default:
+    break;
+  case ISD::SETLT:
+  case ISD::SETGE:
+    CC = ISD::getSetCCSwappedOperands(CC);
+    std::swap(LHS, RHS);
+    break;
+  }
+}
+
+SDValue LAINTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
+  SDValue CC = Op.getOperand(1);
+  SDValue LHS = Op.getOperand(2);
+  SDValue RHS = Op.getOperand(3);
+  SDValue Block = Op->getOperand(4);
+  SDLoc DL(Op);
+
+  assert(LHS.getValueType() == MVT::i32);
+
+  ISD::CondCode CCVal = cast<CondCodeSDNode>(CC)->get();
+  translateSetCCForBranch(DL, LHS, RHS, CCVal, DAG);
+  SDValue TargetCC = DAG.getCondCode(CCVal);
+
+  return DAG.getNode(LAINISD::BR_CC, DL, Op.getValueType(), Op.getOperand(0),
+                     LHS, RHS, TargetCC, Block);
+}
+
+SDValue LAINTargetLowering::lowerFRAMEADDR(SDValue Op,
+                                          SelectionDAG &DAG) const {
+  const LAINRegisterInfo &RI = *STI.getRegisterInfo();
+  MachineFunction &MF = DAG.getMachineFunction();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  MFI.setFrameAddressIsTaken(true);
+  Register FrameReg = RI.getFrameRegister(MF);
+  EVT VT = Op.getValueType();
+  SDLoc DL(Op);
+  SDValue FrameAddr = DAG.getCopyFromReg(DAG.getEntryNode(), DL, FrameReg, VT);
+  // Only for current frame
+  assert(cast<ConstantSDNode>(Op.getOperand(0))->getZExtValue() == 0);
+  return FrameAddr;
+}
+
+SDValue LAINTargetLowering::LowerOperation(SDValue Op,
+                                          SelectionDAG &DAG) const {
+  LAIN_DUMP_WHITE
+  switch (Op->getOpcode()) {
+  case ISD::BR_CC:
+    return lowerBR_CC(Op, DAG);
+  case ISD::FRAMEADDR:
+    return lowerFRAMEADDR(Op, DAG);
+//  case ISD::SELECT:
+//    return lowerSELECT(Op, DAG);
+  default:
+    llvm_unreachable("");
+  }
+}
+SDValue LAINTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const
+{
+  return Op;
 }
