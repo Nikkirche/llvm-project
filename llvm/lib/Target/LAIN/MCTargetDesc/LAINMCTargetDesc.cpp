@@ -28,7 +28,7 @@ using namespace llvm;
 static MCRegisterInfo *createLAINMCRegisterInfo(const Triple &TT) {
   LAIN_DUMP_MAGENTA
   MCRegisterInfo *X = new MCRegisterInfo();
-  InitLAINMCRegisterInfo(X, LAIN::R0);
+  InitLAINMCRegisterInfo(X, LAIN::RA);
   return X;
 }
 
@@ -44,7 +44,7 @@ static MCAsmInfo *createLAINMCAsmInfo(const MCRegisterInfo &MRI,
                                      const MCTargetOptions &Options) {
   LAIN_DUMP_MAGENTA
   MCAsmInfo *MAI = new LAINELFMCAsmInfo(TT);
-  unsigned SP = MRI.getDwarfRegNum(LAIN::R1, true);
+  unsigned SP = MRI.getDwarfRegNum(LAIN::SP, true);
   MCCFIInstruction Inst = MCCFIInstruction::cfiDefCfa(nullptr, SP, 0);
   MAI->addInitialFrameState(Inst);
   return MAI;

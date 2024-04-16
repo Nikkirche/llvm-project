@@ -22,24 +22,27 @@ LAINInstrInfo::LAINInstrInfo()
 
 unsigned LAINInstrInfo::isLoadFromStackSlot(const MachineInstr &MI,
                                             int &FrameIndex) const {
-  switch (MI.getOpcode()) {
-  default:
-    return 0;
-    // TODO: load opcodes
-    break;
-  }
-
-  if (MI.getOperand(1).isFI() && MI.getOperand(2).isImm() &&
-      MI.getOperand(2).getImm() == 0) {
-    FrameIndex = MI.getOperand(1).getIndex();
-    return MI.getOperand(0).getReg();
+  int Opcode = MI.getOpcode();
+  if(Opcode == LAIN::LDI) {
+    if (MI.getOperand(1).isFI() && MI.getOperand(2).isImm() &&
+        MI.getOperand(2).getImm() == 0) {
+      FrameIndex = MI.getOperand(1).getIndex();
+      return MI.getOperand(0).getReg();
+    }
   }
   return 0;
 }
 
 unsigned LAINInstrInfo::isStoreToStackSlot(const MachineInstr &MI,
                                            int &FrameIndex) const {
-  llvm_unreachable("");
+  int Opcode = MI.getOpcode();
+  if (Opcode == LAIN::STI_) {
+    if ((MI.getOperand(1).isFI()) && // is a stack slot
+        (MI.getOperand(2).isImm()) && MI.getOperand(2).getImm() == 0) {
+      FrameIndex = MI.getOperand(1).getIndex();
+      return MI.getOperand(0).getReg();
+    }
+  }
   return 0;
 }
 

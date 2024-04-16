@@ -22,7 +22,7 @@ define dso_local void @_Z7drawGenPKj(i32* nocapture noundef readonly %0) local_u
   br label %10
 
 6:                                                ; preds = %7
-  tail call void @llvm.lain.simFlush()
+  tail call void @llvm.lain.flush()
   ret void
 
 7:                                                ; preds = %10
@@ -39,7 +39,7 @@ define dso_local void @_Z7drawGenPKj(i32* nocapture noundef readonly %0) local_u
   %16 = mul i32 %14, 4095
   %17 = select i1 %15, i32 -1, i32 %16
   %18 = trunc i64 %11 to i32
-  tail call void @llvm.lain.simSetPixel(i32 noundef %18, i32 noundef %5, i32 noundef %17)
+  tail call void @llvm.lain.setpixel(i32 noundef %18, i32 noundef %5, i32 noundef %17)
   %19 = add nuw nsw i64 %11, 1
   %20 = icmp eq i64 %19, 64
   br i1 %20, label %7, label %10, !llvm.loop !11
@@ -48,12 +48,12 @@ define dso_local void @_Z7drawGenPKj(i32* nocapture noundef readonly %0) local_u
 ; Function Attrs: argmemonly mustprogress nofree nosync nounwind willreturn
 declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
 
-declare void @llvm.lain.simSetPixel(i32 noundef, i32 noundef, i32 noundef) local_unnamed_addr #3
+declare void @llvm.lain.setpixel(i32 noundef, i32 noundef, i32 noundef) local_unnamed_addr #3
 
 ; Function Attrs: argmemonly mustprogress nofree nosync nounwind willreturn
 declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
 
-declare void @llvm.lain.simFlush() local_unnamed_addr #3
+declare void @llvm.lain.flush() local_unnamed_addr #3
 
 ; Function Attrs: mustprogress sspstrong uwtable
 define dso_local void @_Z7calcGenPjPKj(i32* nocapture noundef writeonly %0, i32* nocapture noundef readonly %1) local_unnamed_addr #1 {
@@ -94,10 +94,10 @@ define dso_local void @_Z7calcGenPjPKj(i32* nocapture noundef writeonly %0, i32*
   %25 = phi i32 [ 0, %12 ], [ %66, %53 ]
   %26 = icmp eq i32 %24, 0
   %27 = sub nsw i32 %14, %24
-  %28 = tail call noundef i32 @llvm.lain.simAbs(i32 noundef %7)
+  %28 = tail call noundef i32 @llvm.lain.abs(i32 noundef %7)
   %29 = srem i32 %28, 64
   %30 = shl nsw i32 %29, 6
-  %31 = tail call noundef i32 @llvm.lain.simAbs(i32 noundef %27)
+  %31 = tail call noundef i32 @llvm.lain.abs(i32 noundef %27)
   %32 = srem i32 %31, 64
   %33 = add nsw i32 %30, %32
   %34 = sext i32 %33 to i64
@@ -109,10 +109,10 @@ define dso_local void @_Z7calcGenPjPKj(i32* nocapture noundef writeonly %0, i32*
   br i1 %26, label %53, label %40
 
 40:                                               ; preds = %23
-  %41 = tail call noundef i32 @llvm.lain.simAbs(i32 noundef %8)
+  %41 = tail call noundef i32 @llvm.lain.abs(i32 noundef %8)
   %42 = srem i32 %41, 64
   %43 = shl nsw i32 %42, 6
-  %44 = tail call noundef i32 @llvm.lain.simAbs(i32 noundef %27)
+  %44 = tail call noundef i32 @llvm.lain.abs(i32 noundef %27)
   %45 = srem i32 %44, 64
   %46 = add nsw i32 %43, %45
   %47 = sext i32 %46 to i64
@@ -125,10 +125,10 @@ define dso_local void @_Z7calcGenPjPKj(i32* nocapture noundef writeonly %0, i32*
 
 53:                                               ; preds = %40, %23
   %54 = phi i32 [ %39, %23 ], [ %52, %40 ]
-  %55 = tail call noundef i32 @llvm.lain.simAbs(i32 noundef %10)
+  %55 = tail call noundef i32 @llvm.lain.abs(i32 noundef %10)
   %56 = srem i32 %55, 64
   %57 = shl nsw i32 %56, 6
-  %58 = tail call noundef i32 @llvm.lain.simAbs(i32 noundef %27)
+  %58 = tail call noundef i32 @llvm.lain.abs(i32 noundef %27)
   %59 = srem i32 %58, 64
   %60 = add nsw i32 %57, %59
   %61 = sext i32 %60 to i64
@@ -160,17 +160,15 @@ define dso_local void @_Z7calcGenPjPKj(i32* nocapture noundef writeonly %0, i32*
   br i1 %79, label %15, label %12, !llvm.loop !14
 }
 
-declare noundef i32 @_Z6simAbsi(i32 noundef) local_unnamed_addr #3
+declare noundef i32 @_Z6absi(i32 noundef) local_unnamed_addr #3
 
 ; Function Attrs: mustprogress norecurse sspstrong uwtable
 define dso_local noundef i32 @main() local_unnamed_addr #4 {
-  %1 = alloca [4096 x i32], align 16
-  %2 = alloca [4096 x i32], align 16
-  %3 = bitcast [4096 x i32]* %1 to i8*
-  call void @llvm.lifetime.start.p0i8(i64 16384, i8* nonnull %3) #5
-  %4 = bitcast [4096 x i32]* %2 to i8*
-  call void @llvm.lifetime.start.p0i8(i64 16384, i8* nonnull %4) #5
-  %5 = getelementptr inbounds [4096 x i32], [4096 x i32]* %1, i64 0, i64 0
+  %1 = alloca [1024 x i32], align 4
+  %2 = alloca [1024 x i32], align 4
+  %3 = bitcast [1024 x i32]* %1 to i8*
+  %4 = bitcast [1024 x i32]* %2 to i8*
+  %5 = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 0
   tail call void @llvm.lain.init()
   br label %6
 
@@ -193,20 +191,20 @@ define dso_local noundef i32 @main() local_unnamed_addr #4 {
 16:                                               ; preds = %16, %9
   %17 = phi i64 [ 0, %9 ], [ %25, %16 ]
   %18 = add nuw nsw i64 %17, %11
-  %19 = getelementptr inbounds [4096 x i32], [4096 x i32]* %2, i64 0, i64 %18
+  %19 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %18
   %20 = load i32, i32* %19, align 4, !tbaa !7
   %21 = icmp eq i32 %20, 0
   %22 = mul i32 %20, 4095
   %23 = select i1 %21, i32 -1, i32 %22
   %24 = trunc i64 %17 to i32
-  tail call void @llvm.lain.simSetPixel(i32 noundef %24, i32 noundef %12, i32 noundef %23)
+  tail call void @llvm.lain.setpixel(i32 noundef %24, i32 noundef %12, i32 noundef %23)
   %25 = add nuw nsw i64 %17, 1
   %26 = icmp eq i64 %25, 64
   br i1 %26, label %13, label %16, !llvm.loop !11
 
 27:                                               ; preds = %13
-  %28 = getelementptr inbounds [4096 x i32], [4096 x i32]* %2, i64 0, i64 0
-  tail call void @llvm.lain.simFlush()
+  %28 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 0
+  tail call void @llvm.lain.flush()
   br label %41
 
 29:                                               ; preds = %32
@@ -216,18 +214,16 @@ define dso_local noundef i32 @main() local_unnamed_addr #4 {
 
 32:                                               ; preds = %6, %32
   %33 = phi i64 [ 0, %6 ], [ %38, %32 ]
-  %34 = tail call noundef i32 @llvm.lain.simRand()
+  %34 = tail call noundef i32 @llvm.lain.rand()
   %35 = srem i32 %34, 2
   %36 = add nuw nsw i64 %33, %8
-  %37 = getelementptr inbounds [4096 x i32], [4096 x i32]* %2, i64 0, i64 %36
+  %37 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %36
   store i32 %35, i32* %37, align 4, !tbaa !7
   %38 = add nuw nsw i64 %33, 1
   %39 = icmp eq i64 %38, 64
   br i1 %39, label %29, label %32, !llvm.loop !16
 
 40:                                               ; preds = %63
-  call void @llvm.lifetime.end.p0i8(i64 16384, i8* nonnull %4) #5
-  call void @llvm.lifetime.end.p0i8(i64 16384, i8* nonnull %3) #5
   ret i32 0
 
 41:                                               ; preds = %27, %63
@@ -257,13 +253,13 @@ define dso_local noundef i32 @main() local_unnamed_addr #4 {
   %58 = mul i32 %56, 4095
   %59 = select i1 %57, i32 -1, i32 %58
   %60 = trunc i64 %53 to i32
-  tail call void @llvm.lain.simSetPixel(i32 noundef %60, i32 noundef %48, i32 noundef %59)
+  tail call void @llvm.lain.setpixel(i32 noundef %60, i32 noundef %48, i32 noundef %59)
   %61 = add nuw nsw i64 %53, 1
   %62 = icmp eq i64 %61, 64
   br i1 %62, label %49, label %52, !llvm.loop !11
 
 63:                                               ; preds = %49
-  tail call void @llvm.lain.simFlush()
+  tail call void @llvm.lain.flush()
   %64 = add nuw nsw i32 %42, 1
   %65 = icmp eq i32 %64, 8
   br i1 %65, label %40, label %41, !llvm.loop !17
@@ -271,7 +267,7 @@ define dso_local noundef i32 @main() local_unnamed_addr #4 {
 
 declare void @llvm.lain.init() local_unnamed_addr #3
 
-declare noundef i32 @llvm.lain.simRand() local_unnamed_addr #3
+declare noundef i32 @llvm.lain.rand() local_unnamed_addr #3
 
 !0 = !{i32 1, !"wchar_size", i32 4}
 !1 = !{i32 7, !"PIC Level", i32 2}

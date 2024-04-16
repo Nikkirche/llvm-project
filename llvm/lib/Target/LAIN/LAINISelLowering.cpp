@@ -27,7 +27,7 @@
 
 using namespace llvm;
 
-static const MCPhysReg ArgGPRs[] = {LAIN::R0, LAIN::R1, LAIN::R2, LAIN::R3};
+static const MCPhysReg ArgGPRs[] = {LAIN::RA, LAIN::SP, LAIN::FP, LAIN::BP};
 
 void LAINTargetLowering::ReplaceNodeResults(SDNode *N,
                                             SmallVectorImpl<SDValue> &Results,
@@ -42,15 +42,18 @@ LAINTargetLowering::LAINTargetLowering(const TargetMachine &TM,
 
   computeRegisterProperties(STI.getRegisterInfo());
 
-  setStackPointerRegisterToSaveRestore(LAIN::R1);
+  setStackPointerRegisterToSaveRestore(LAIN::SP);
 
   // setSchedulingPreference(Sched::Source);
 
   for (unsigned Opc = 0; Opc < ISD::BUILTIN_OP_END; ++Opc) {
-    setOperationAction(Opc, MVT::i32, Expand);
+    // setOperationAction(Opc, MVT::i32, Expand);
 
     setOperationAction(ISD::ADD, MVT::i32, Legal);
     setOperationAction(ISD::MUL, MVT::i32, Legal);
+    setOperationAction(ISD::SHL, MVT::i32, Legal);
+    setOperationAction(ISD::SRL, MVT::i32, Legal);
+
     // ...
     setOperationAction(ISD::LOAD, MVT::i32, Legal);
     setOperationAction(ISD::STORE, MVT::i32, Legal);
@@ -58,13 +61,14 @@ LAINTargetLowering::LAINTargetLowering(const TargetMachine &TM,
     setOperationAction(ISD::Constant, MVT::i32, Legal);
     setOperationAction(ISD::UNDEF, MVT::i32, Legal);
 
-     setOperationAction(ISD::BR_CC, MVT::i32, Custom);
-    // setOperationAction(ISD::SELECT, MVT::i32, Expand);
-//    setOperationAction(ISD::SELECT, MVT::i32, Custom);
-//    for (MVT VT : MVT::integer_valuetypes()) {
-//      setOperationAction(ISD::BR_CC, VT, Expand);
-//      setOperationAction(ISD::SELECT_CC, VT, Expand);
-//    }
+    setOperationAction(ISD::BR_CC, MVT::i32, Custom);
+    setOperationAction(ISD::SETCC, MVT::i32, Expand);
+    setOperationAction(ISD::SELECT, MVT::i32, Custom);
+    //    setOperationAction(ISD::SELECT, MVT::i32, Custom);
+    //    for (MVT VT : MVT::integer_valuetypes()) {
+    //      setOperationAction(ISD::BR_CC, VT, Expand);
+    setOperationAction(ISD::SELECT_CC, MVT::i32, Custom);
+    //    }
     setOperationAction(ISD::FRAMEADDR, MVT::i32, Legal);
   }
 }
@@ -75,6 +79,8 @@ const char *LAINTargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "LAINISD::CALL";
   case LAINISD::RET:
     return "LAINISD::RET";
+  case LAINISD::SELECT_REG:
+    return "LAINISD::SELECT_REG";
   }
   return nullptr;
 }
@@ -208,7 +214,7 @@ SDValue LAINTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
 
       // Work out the address of the stack slot.
       if (!StackPtr.getNode())
-        StackPtr = DAG.getCopyFromReg(Chain, DL, LAIN::R1, PtrVT);
+        StackPtr = DAG.getCopyFromReg(Chain, DL, LAIN::SP, PtrVT);
       SDValue Address =
           DAG.getNode(ISD::ADD, DL, PtrVT, StackPtr,
                       DAG.getIntPtrConstant(VA.getLocMemOffset(), DL));
@@ -651,7 +657,7 @@ SDValue LAINTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 }
 
 SDValue LAINTargetLowering::lowerFRAMEADDR(SDValue Op,
-                                          SelectionDAG &DAG) const {
+                                           SelectionDAG &DAG) const {
   const LAINRegisterInfo &RI = *STI.getRegisterInfo();
   MachineFunction &MF = DAG.getMachineFunction();
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -666,20 +672,39 @@ SDValue LAINTargetLowering::lowerFRAMEADDR(SDValue Op,
 }
 
 SDValue LAINTargetLowering::LowerOperation(SDValue Op,
-                                          SelectionDAG &DAG) const {
+                                           SelectionDAG &DAG) const {
   LAIN_DUMP_WHITE
   switch (Op->getOpcode()) {
   case ISD::BR_CC:
     return lowerBR_CC(Op, DAG);
   case ISD::FRAMEADDR:
     return lowerFRAMEADDR(Op, DAG);
-//  case ISD::SELECT:
-//    return lowerSELECT(Op, DAG);
+  case ISD::SELECT:
+    return lowerSELECT(Op, DAG);
+  case ISD::SELECT_CC:
+    return lowerSELECT_CC(Op, DAG);
   default:
     llvm_unreachable("");
   }
 }
-SDValue LAINTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const
-{
+SDValue LAINTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const {
   return Op;
+}
+SDValue LAINTargetLowering::lowerSELECT_CC(SDValue Op,
+                                           SelectionDAG &DAG) const {
+  SDValue LHS = Op.getOperand(0);
+  SDValue RHS = Op.getOperand(1);
+  ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(4))->get();
+  SDValue TVal = Op.getOperand(2);
+  SDValue FVal = Op.getOperand(3);
+  SDLoc DL(Op);
+
+  assert(LHS.getValueType() == MVT::i32);
+
+  translateSetCCForBranch(DL, LHS, RHS, CC, DAG);
+  SDValue TargetCC = DAG.getCondCode(CC);
+  SDValue Cmp = DAG.getNode(LAINISD::CMP, DL, MVT::Glue, LHS, RHS);
+  // return DAG.getNode(LAINISD::SELECT_REG, DL,TVal.getValueType(), TVal,
+  // FVal,TargetCC, Cmp);
+  return DAG.getNode(LAINISD::SELECT_REG, DL, TVal.getValueType(),TVal, FVal);
 }

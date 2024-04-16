@@ -18,6 +18,8 @@ enum NodeType : unsigned {
   RET,
   CALL,
   BR_CC,
+  CMP,
+  SELECT_REG
 };
 
 } // namespace LAINISD
@@ -73,6 +75,7 @@ private:
   SDValue lowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerSELECT(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerSELECT_CC(SDValue value, SelectionDAG &dag) const;
 };
 
 } // end namespace llvm

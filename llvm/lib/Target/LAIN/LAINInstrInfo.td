@@ -2,7 +2,6 @@
 // LAIN profiles and nodes
 //===----------------------------------------------------------------------===//
 
-
 def SDT_LAINCall         : SDTypeProfile<0, -1, [SDTCisVT<0, i32>]>;
 def SDT_LAINCallSeqStart : SDCallSeqStart<[ SDTCisVT<0, i32>,
                                             SDTCisVT<1, i32> ]>;
@@ -12,21 +11,30 @@ def SDT_LAINCallSeqEnd   : SDCallSeqEnd<[ SDTCisVT<0, i32>,
 def SDT_LAINBrCC : SDTypeProfile<0, 4, [ SDTCisSameAs<0, 1>,
                                          SDTCisVT<2, OtherVT>,
                                          SDTCisVT<3, OtherVT>]>;
+//def LAINselectreg :
+//SDTypeProfile<1, 4, [SDTCisSameAs<0, 1>, SDTCisSameAs<1, 2>, SDTCisVT<3, OtherVT>, SDTCisVT<4, OtherVT>]>;
 
-def lain_ret      : SDNode<"LAINISD::RET", SDTNone,
-                            [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
-def lain_call     : SDNode<"LAINISD::CALL", SDT_LAINCall,
-                            [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
-                             SDNPVariadic]>;
-
-def lain_brcc     : SDNode<"LAINISD::BR_CC", SDT_LAINBrCC,
-                            [SDNPHasChain]>;
+def LAINselectreg :
+SDTypeProfile<1, 2, []>;
 
 // These are target-independent nodes, but have target-specific formats.
 def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_LAINCallSeqStart,
                            [SDNPHasChain, SDNPOutGlue]>;
 def callseq_end   : SDNode<"ISD::CALLSEQ_END",   SDT_LAINCallSeqEnd,
                            [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
+
+def lain_ret      : SDNode<"LAINISD::RET", SDTNone,
+                            [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
+
+def lain_call     : SDNode<"LAINISD::CALL", SDT_LAINCall,
+                            [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
+                             SDNPVariadic]>;
+
+def lain_brcc     :  SDNode<"LAINISD::BR_CC", SDT_LAINBrCC,
+                            [SDNPHasChain]>;
+
+def lain_selectreg : SDNode<"LAINISD::SELECT_REG", LAINselectreg, []>;
+
 
 //===----------------------------------------------------------------------===//
 // Instruction format superclass
@@ -35,29 +43,25 @@ def callseq_end   : SDNode<"ISD::CALLSEQ_END",   SDT_LAINCallSeqEnd,
 include "LAINInstrFormats.td"
 
 //===----------------------------------------------------------------------===//
-// LAIN Operand, Complex Patterns and Transformations Definitions.
+// Pseudo Instructions
 //===----------------------------------------------------------------------===//
 
-def LI16 : SDNodeXForm<imm, [{
-  return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() & 0xffff,
-                                   SDLoc(N), MVT::i32);
-}]>;
-
-def HI16 : SDNodeXForm<imm, [{
-  return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() >> 16, SDLoc(N),
-                                   MVT::i32);
-}]>;
-
-def i32li16u : Operand<i32>, PatLeaf<(i32 imm), [{
-    return ((N->getZExtValue() & 0xFFFFUL) == N->getZExtValue());}], LI16> {
+let Defs = [R2], Uses = [R2] in {
+def ADJCALLSTACKDOWN : LAINPseudoInst<(outs), (ins i32imm:$amt, i32imm:$amt2),
+                               "# ADJCALLSTACKDOWN $amt, $amt2",
+                               [(callseq_start timm:$amt, timm:$amt2)]>;
+def ADJCALLSTACKUP : LAINPseudoInst<(outs), (ins i32imm:$amt1, i32imm:$amt2),
+                            "# ADJCALLSTACKUP $amt1",
+                            [(callseq_end timm:$amt1, timm:$amt2)]>;
 }
 
-// def HiImm16AsmOperand : AsmOperandClass { let Name = "HiImm16"; }
-def i32hi16 : Operand<i32>, PatLeaf<(i32 imm), [{
-    // i32hi16 predicate - true if the 32-bit immediate has only leftmost 16
-    // bits set.
-    return ((N->getZExtValue() & 0xFFFF0000UL) == N->getZExtValue());}], HI16> {
-}
+def IsOrAdd: PatFrag<(ops node:$A, node:$B), (or node:$A, node:$B), [{
+  return isOrEquivalentToAdd(N);
+}]>;
+
+//===----------------------------------------------------------------------===//
+// LAIN Operand, Complex Patterns and Transformations Definitions.
+//===----------------------------------------------------------------------===//
 
 class ImmAsmOperand<string prefix, int width, string suffix> : AsmOperandClass {
   let Name = prefix # "Imm" # width # suffix;
@@ -87,6 +91,7 @@ def simm16 : Operand<i32>, ImmLeaf<i32, [{return isInt<16>(Imm);}]> {
   let OperandNamespace = "LAINOp";
 }
 
+
 def uimm16 : Operand<i32>, ImmLeaf<i32, [{return isUInt<16>(Imm);}]> {
   let ParserMatchClass = UImmAsmOperand<16>;
   let EncoderMethod = "getImm16OpValue";
@@ -97,9 +102,11 @@ def uimm16 : Operand<i32>, ImmLeaf<i32, [{return isUInt<16>(Imm);}]> {
       return isUInt<16>(Imm);
     return MCOp.isBareSymbolRef();
   }];
-  let OperandType = "OPERAND_Uimm16";
-  let OperandNamespace = "USImOPp";
+  let OperandType = "OPERAND_UIMM16";
+  let OperandNamespace = "LAINOp";
 }
+
+
 
 def btarget16 : Operand<OtherVT> {
   let ParserMatchClass = SImmAsmOperand<16>;
@@ -130,6 +137,30 @@ def ctarget16 : Operand<i32> {
   let OperandType = "OPERAND_PCREL";
 }
 
+def LI16 : SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() & 0xffff,
+                                   SDLoc(N), MVT::i32);
+}]>;
+
+def HI16 : SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() >> 16, SDLoc(N),
+                                   MVT::i32);
+}]>;
+
+// def LiImm16AsmOperand : AsmOperandClass { let Name = "LiImm16"; }
+def i32li16u : Operand<i32>, PatLeaf<(i32 imm), [{
+    return ((N->getZExtValue() & 0xFFFFUL) == N->getZExtValue());}], LI16> {
+  // let ParserMatchClass = LiImm16AsmOperand;
+}
+
+// def HiImm16AsmOperand : AsmOperandClass { let Name = "HiImm16"; }
+def i32hi16 : Operand<i32>, PatLeaf<(i32 imm), [{
+    // i32hi16 predicate - true if the 32-bit immediate has only leftmost 16
+    // bits set.
+    return ((N->getZExtValue() & 0xFFFF0000UL) == N->getZExtValue());}], HI16> {
+  // let ParserMatchClass = HiImm16AsmOperand;
+  // let PrintMethod = "printHi16ImmOperand";
+}
 
 // Addressing modes
 def AddrFI : ComplexPattern<iPTR, 1, "SelectAddrFI", [frameindex], []>;
@@ -146,6 +177,17 @@ class PatGprImm<SDPatternOperator OpNode, LAINInst Inst, ImmLeaf ImmType>
 class PatBcc<CondCode Cond, LAINInst Inst>
     : Pat<(lain_brcc GPR:$r1, GPR:$r2, Cond, bb:$r3_imm),
           (Inst GPR:$r1, GPR:$r2, btarget16:$r3_imm)>;
+
+def RegCCOp : Operand<i16>;
+let Constraints = "$rd = $r1",r2 = 0, r3_imm = 0 in
+{
+    def MOVR : LAINInst<0x00, (outs GPR:$rd), (ins GPR:$r1, GPR:$r2),
+    //,GPR: $r2,RegCCOp: $rcode, GPR:$r3_imm),
+                           //!strconcat("movr$rcode","$r1"),
+                           "MOVR $r1 $r2",
+                           // [(set i32:$rd, (LAINselectreg lainm32:imm , i32:$r2, $rcond, i32:$r4))]>;
+                            [(set GPR:$rd, (lain_selectreg GPR:$r1, GPR:$r2))]>;
+}
 
 //===----------------------------------------------------------------------===//
 // Instructions specific format
@@ -166,6 +208,11 @@ class ArithmRI<bits<8> op, string opcodestr>
     : LAINInst<op, (outs GPR:$r1), (ins GPR:$r2, simm16:$r3_imm),
               !strconcat(opcodestr, " $r1 $r2 $r3_imm"), []>;
 
+
+//===----------------------------------------------------------------------===//
+// Instruction definition
+//===----------------------------------------------------------------------===//
+
 //===----------------------------------------------------------------------===//
 // LAIN Instructions
 //===----------------------------------------------------------------------===//
@@ -174,7 +221,6 @@ class ArithmRI<bits<8> op, string opcodestr>
 let hasSideEffects = 0, mayLoad = 0, mayStore = 0, isBarrier = 1, isBranch = 1, isTerminator = 1, r1 = 0, r2 = 0 in
 def B : LAINInst<0xB0, (outs), (ins btarget16:$r3_imm), "B $r3_imm",
                  [(br bb:$r3_imm)]>;
-
 let hasSideEffects = 0, mayLoad = 0, mayStore = 0, isCall = 1, isBranch = 1, isTerminator = 1, r2 = 0 in
 def BL : LAINInst<0xBA, (outs GPR:$r1), (ins ctarget16:$r3_imm), "BL $r1 $r3_imm",
                   []>;
@@ -201,18 +247,6 @@ let isCall = 1, Defs = [R0] in
 def PseudoCALLInd : LAINPseudoInst<(outs), (ins GPR:$r1), "# PseudoCALLInd",
                     [(lain_call GPR:$r1)]>,
                     PseudoInstExpansion<(BLR R0, GPR:$r1)>;
-
-let Defs = [R2], Uses = [R2] in {
-def ADJCALLSTACKDOWN : LAINPseudoInst<(outs), (ins i32imm:$amt, i32imm:$amt2),
-                               "# ADJCALLSTACKDOWN $amt, $amt2",
-                               [(callseq_start timm:$amt, timm:$amt2)]>;
-def ADJCALLSTACKUP : LAINPseudoInst<(outs), (ins i32imm:$amt1, i32imm:$amt2),
-                            "# ADJCALLSTACKUP $amt1",
-                            [(callseq_end timm:$amt1, timm:$amt2)]>;
-}
-def IsOrAdd: PatFrag<(ops node:$A, node:$B), (or node:$A, node:$B), [{
-  return isOrEquivalentToAdd(N);
-}]>;
 
 def BEQ  : BranchCC<0x70, "B.EQ">;
 def BNE  : BranchCC<0x71, "B.NE">;
@@ -270,10 +304,15 @@ def DIV : ArithmRR<0x33, "DIV">;  def : PatGprGpr<sdiv, DIV>;
 def OR  : ArithmRR<0x34, "OR">;   def : PatGprGpr<or,   OR>;
 def AND : ArithmRR<0x35, "AND">;  def : PatGprGpr<and,  AND>;
 def XOR : ArithmRR<0x36, "XOR">;  def : PatGprGpr<xor,  XOR>;
+def SHL : ArithmRR<0x37, "SHL">;  def : PatGprGpr<shl,  SHL>;
+def SRL : ArithmRR<0x38, "SRL">;  def : PatGprGpr<srl,  SRL>;
 
 def ADDI : ArithmRI<0x40, "ADDi">; def : PatGprImm<add, ADDI, simm16>;
 def MULI : ArithmRI<0x42, "MULi">; def : PatGprImm<mul, MULI, simm16>;
 def ORI  : ArithmRI<0x44, "ORi">;  def : PatGprImm<mul, ORI,  simm16>;
+//===----------------------------------------------------------------------===//
+// LAIN Other patterns
+//===----------------------------------------------------------------------===//
 
 // i16 imm
 def : Pat<(i32 i32li16u:$r3_imm), (MOVLI imm:$r3_imm)>;
@@ -284,3 +323,6 @@ def : Pat<(add (i32 AddrFI:$r1), simm16:$r3_imm),
           (ADDI (i32 AddrFI:$r1), simm16:$r3_imm)>;
 def : Pat<(IsOrAdd (i32 AddrFI:$r1), simm16:$r3_imm),
           (ADDI (i32 AddrFI:$r1), simm16:$r3_imm)>;
+
+//select
+//def : Pat<(select (i32 GPR:$r1), (simm16:$r3_imm), (i32 GPR:$r2)),(ADD $r1, $r2)>;
