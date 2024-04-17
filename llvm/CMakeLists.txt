@@ -467,6 +467,7 @@ set(LLVM_ALL_TARGETS
   WebAssembly
   X86
   XCore
+  LAIN
   )
 
 set(LLVM_ALL_EXPERIMENTAL_TARGETS
