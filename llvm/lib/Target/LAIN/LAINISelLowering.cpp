@@ -64,9 +64,6 @@ LAINTargetLowering::LAINTargetLowering(const TargetMachine &TM,
     setOperationAction(ISD::BR_CC, MVT::i32, Custom);
     setOperationAction(ISD::SETCC, MVT::i32, Expand);
     setOperationAction(ISD::SELECT, MVT::i32, Custom);
-    //    setOperationAction(ISD::SELECT, MVT::i32, Custom);
-    //    for (MVT VT : MVT::integer_valuetypes()) {
-    //      setOperationAction(ISD::BR_CC, VT, Expand);
     setOperationAction(ISD::SELECT_CC, MVT::i32, Custom);
     //    }
     setOperationAction(ISD::FRAMEADDR, MVT::i32, Legal);
@@ -79,8 +76,8 @@ const char *LAINTargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "LAINISD::CALL";
   case LAINISD::RET:
     return "LAINISD::RET";
-  case LAINISD::SELECT_REG:
-    return "LAINISD::SELECT_REG";
+  case LAINISD::CMOV:
+    return "LAINISD::CMOV";
   }
   return nullptr;
 }
@@ -703,8 +700,6 @@ SDValue LAINTargetLowering::lowerSELECT_CC(SDValue Op,
 
   translateSetCCForBranch(DL, LHS, RHS, CC, DAG);
   SDValue TargetCC = DAG.getCondCode(CC);
-  SDValue Cmp = DAG.getNode(LAINISD::CMP, DL, MVT::Glue, LHS, RHS);
-  // return DAG.getNode(LAINISD::SELECT_REG, DL,TVal.getValueType(), TVal,
-  // FVal,TargetCC, Cmp);
-  return DAG.getNode(LAINISD::SELECT_REG, DL, TVal.getValueType(),TVal, FVal);
+   return DAG.getNode(LAINISD::CMOV, DL,TVal.getValueType(), TVal,
+   FVal,TargetCC, LHS, RHS);
 }

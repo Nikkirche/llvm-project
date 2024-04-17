@@ -1,8 +1,9 @@
 #include "MCTargetDesc/LAINInstPrinter.h"
-#include "TargetInfo/LAINTargetInfo.h"
 #include "LAIN.h"
 #include "LAINSubtarget.h"
+//don't remove this header
 #include "LAINTargetMachine.h"
+#include "TargetInfo/LAINTargetInfo.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
@@ -12,10 +13,8 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCStreamer.h"
-#include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 

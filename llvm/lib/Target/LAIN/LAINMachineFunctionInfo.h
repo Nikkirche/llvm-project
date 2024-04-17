@@ -51,7 +51,6 @@ public:
     return ReturnStackOffset;
   }
 
-  // unsigned MaxCallStackReq = 0;
 };
 
 } // end namespace llvm

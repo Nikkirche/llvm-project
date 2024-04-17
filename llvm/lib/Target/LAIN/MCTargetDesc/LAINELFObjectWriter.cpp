@@ -41,7 +41,9 @@ unsigned LAINELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
   MCFixupKind Kind = Fixup.getKind();
   if (Kind >= FirstLiteralRelocationKind)
     return Kind - FirstLiteralRelocationKind;
-
+  if(Kind == FirstTargetFixupKind)
+    //TODO rewrite taht it uses  directly value from table in  InfosLE
+    return 0;
   llvm_unreachable("Unimplemented fixup -> relocation");
 }
 

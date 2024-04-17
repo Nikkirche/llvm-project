@@ -11,11 +11,8 @@ def SDT_LAINCallSeqEnd   : SDCallSeqEnd<[ SDTCisVT<0, i32>,
 def SDT_LAINBrCC : SDTypeProfile<0, 4, [ SDTCisSameAs<0, 1>,
                                          SDTCisVT<2, OtherVT>,
                                          SDTCisVT<3, OtherVT>]>;
-//def LAINselectreg :
-//SDTypeProfile<1, 4, [SDTCisSameAs<0, 1>, SDTCisSameAs<1, 2>, SDTCisVT<3, OtherVT>, SDTCisVT<4, OtherVT>]>;
-
-def LAINselectreg :
-SDTypeProfile<1, 2, []>;
+def LAINcmov :
+SDTypeProfile<1, 5, [SDTCisSameAs<0, 1>, SDTCisSameAs<1, 2>, SDTCisVT<3, OtherVT>, SDTCisVT<4, i32>,SDTCisVT<4, i32> ]>;
 
 // These are target-independent nodes, but have target-specific formats.
 def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_LAINCallSeqStart,
@@ -33,8 +30,7 @@ def lain_call     : SDNode<"LAINISD::CALL", SDT_LAINCall,
 def lain_brcc     :  SDNode<"LAINISD::BR_CC", SDT_LAINBrCC,
                             [SDNPHasChain]>;
 
-def lain_selectreg : SDNode<"LAINISD::SELECT_REG", LAINselectreg, []>;
-
+def lain_cmov : SDNode<"LAINISD::CMOV", LAINcmov, [SDNPMayStore, SDNPMemOperand]>;
 
 //===----------------------------------------------------------------------===//
 // Instruction format superclass
@@ -178,16 +174,6 @@ class PatBcc<CondCode Cond, LAINInst Inst>
     : Pat<(lain_brcc GPR:$r1, GPR:$r2, Cond, bb:$r3_imm),
           (Inst GPR:$r1, GPR:$r2, btarget16:$r3_imm)>;
 
-def RegCCOp : Operand<i16>;
-let Constraints = "$rd = $r1",r2 = 0, r3_imm = 0 in
-{
-    def MOVR : LAINInst<0x00, (outs GPR:$rd), (ins GPR:$r1, GPR:$r2),
-    //,GPR: $r2,RegCCOp: $rcode, GPR:$r3_imm),
-                           //!strconcat("movr$rcode","$r1"),
-                           "MOVR $r1 $r2",
-                           // [(set i32:$rd, (LAINselectreg lainm32:imm , i32:$r2, $rcond, i32:$r4))]>;
-                            [(set GPR:$rd, (lain_selectreg GPR:$r1, GPR:$r2))]>;
-}
 
 //===----------------------------------------------------------------------===//
 // Instructions specific format
@@ -262,6 +248,18 @@ def : PatBcc<SETGT, BGT>;
 def : PatBcc<SETULE, BLEU>;
 def : PatBcc<SETUGT, BGTU>;
 
+
+
+let Constraints = "$rd = $r1",r5 = 0 in
+{
+    class CMOV<CondCode Cond,bits<12> Op, string name> : LLAINInst<Op, (outs GPR:$rd), (ins GPR:$r1, GPR:$r2, GPR:$r3, GPR:$r4),
+                           !strconcat("CMOV",name, " $r1 $r2 $r3 $r4"),
+                            [(set GPR:$rd, (lain_cmov GPR: $r1, GPR: $r2, Cond, GPR: $r3,GPR: $r4))]>;
+}
+def CMOVE : CMOV<SETEQ,0xc00,"E">;
+def CMOVN : CMOV<SETNE,0xc01,"N">;
+def CMOVULT : CMOV<SETULT,0xc02,"ULT">;
+
 // movli
 let isAsCheapAsAMove = 1, isCodeGenOnly = 1, isReMaterializable = 1, r2 = 0 in
 def MOVLI : LAINInst<0xAA, (outs GPR:$r1), (ins i32li16u:$r3_imm),
@@ -306,6 +304,7 @@ def AND : ArithmRR<0x35, "AND">;  def : PatGprGpr<and,  AND>;
 def XOR : ArithmRR<0x36, "XOR">;  def : PatGprGpr<xor,  XOR>;
 def SHL : ArithmRR<0x37, "SHL">;  def : PatGprGpr<shl,  SHL>;
 def SRL : ArithmRR<0x38, "SRL">;  def : PatGprGpr<srl,  SRL>;
+def SRA : ArithmRR<0x39, "SRA">;  def : PatGprGpr<sra,  SRA>;
 
 def ADDI : ArithmRI<0x40, "ADDi">; def : PatGprImm<add, ADDI, simm16>;
 def MULI : ArithmRI<0x42, "MULi">; def : PatGprImm<mul, MULI, simm16>;
@@ -323,6 +322,3 @@ def : Pat<(add (i32 AddrFI:$r1), simm16:$r3_imm),
           (ADDI (i32 AddrFI:$r1), simm16:$r3_imm)>;
 def : Pat<(IsOrAdd (i32 AddrFI:$r1), simm16:$r3_imm),
           (ADDI (i32 AddrFI:$r1), simm16:$r3_imm)>;
-
-//select
-//def : Pat<(select (i32 GPR:$r1), (simm16:$r3_imm), (i32 GPR:$r2)),(ADD $r1, $r2)>;

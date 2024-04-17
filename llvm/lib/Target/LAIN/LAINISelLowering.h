@@ -18,8 +18,7 @@ enum NodeType : unsigned {
   RET,
   CALL,
   BR_CC,
-  CMP,
-  SELECT_REG
+  CMOV
 };
 
 } // namespace LAINISD

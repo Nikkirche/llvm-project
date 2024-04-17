@@ -2,7 +2,6 @@
 #include "LAINSubtarget.h"
 #include "LAIN.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/ErrorHandling.h"
 using namespace llvm;
 
 #define DEBUG_TYPE "lain-subtarget"

@@ -40,6 +40,36 @@ class LAINInst<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern>:
 
 }
 
+class LLAINInst<bits<12> op, dag outs, dag ins, string asmstr, list<dag> pattern>: Instruction
+{
+  // Inst and Size: for tablegen(... -gen-emitter) and
+  // tablegen(... -gen-disassembler) in CMakeLists.txt
+  let Namespace = "LAIN";
+  let DecoderNamespace = "LAIN";
+  let Size = 4;
+
+  field bits<32> Inst;
+
+  bits<12> Opcode = op;
+  bits<4>  r1;
+  bits<4>  r2;
+  bits<4>  r3;
+  bits<4>  r4;
+  bits<4>  r5;
+
+
+  let Inst{31-20} = Opcode;
+  let Inst{19-16} = r1;
+  let Inst{15-12} = r2;
+  let Inst{11-8}  = r3;
+  let Inst{7-4} = r4;
+  let Inst{3-0}  = r5;
+
+  let OutOperandList = outs;
+  let InOperandList  = ins;
+  let AsmString   = asmstr;
+  let Pattern     = pattern;
+}
 // Pseudo instructions format
 class LAINPseudoInst<dag outs, dag ins, string asmstr, list<dag> pattern>
    : LAINInst<0, outs, ins, asmstr, pattern> {
